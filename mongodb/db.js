@@ -17,7 +17,7 @@ const config = {
         }
     }
 }
-console.info(config)
+mongoose.set('useCreateIndex', true) //加上这个
 mongoose.connect(config.url, { useUnifiedTopology: true });
 mongoose.Promise = global.Promise;
 
