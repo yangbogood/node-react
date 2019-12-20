@@ -3,7 +3,10 @@
 # 下载代码
 ```
 git clone https://github.com/yangbogood/node-react.git
+
 cd node-react
-npm install 
+
+npm install
+
 yarn或者yarn inslall 
 ```
