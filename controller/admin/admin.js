@@ -4,15 +4,118 @@ import crypto from 'crypto';
 import formidable from 'formidable';
 import dtime from 'time-formater';
 
-
-
 class Admin extends AddressComponent {
     constructor() {
         super();
         this.login = this.login.bind(this)
-            // this.register = this.register.bind(this)
-            // this.encryption = this.encryption.bind(this)
-            // this.updateAvatar = this.updateAvatar.bind(this)
+        this.register = this.register.bind(this)
+        this.encryption = this.encryption.bind(this)
+        this.updateAvatar = this.updateAvatar.bind(this)
+    }
+
+    async updateAvatar(req, res, next) {
+        console.info(req)
+        const admin_id = req.params.admin_id;
+        if (!admin_id || !Number(admin_id)) {
+            console.log('admin_id参数错误', admin_id)
+            res.send({
+                status: 0,
+                type: 'ERROR_ADMINID',
+                message: 'admin_id参数错误',
+            })
+            return
+        }
+
+        try {
+            const image_path = await this.getPath(req);
+            await AdminModel.findOneAndUpdate({ id: admin_id }, { $set: { avatar: image_path } });
+            res.send({
+                status: 1,
+                image_path,
+            })
+            return
+        } catch (err) {
+            console.log('上传图片失败', err);
+            res.send({
+                status: 0,
+                type: 'ERROR_UPLOAD_IMG',
+                message: '上传图片失败'
+            })
+            return
+        }
+    }
+
+    async register(req, res, next) {
+        const form = new formidable.IncomingForm();
+        form.parse(req, async(err, fields, files) => {
+            if (err) {
+                res.send({
+                    status: 0,
+                    type: 'FORM_DATA_ERROR',
+                    message: '表单信息错误'
+                })
+                return
+            }
+            const { user_name, password, status = 1 } = fields;
+            try {
+                if (!user_name) {
+                    throw new Error('用户名错误')
+                } else if (!password) {
+                    throw new Error('密码错误')
+                }
+            } catch (err) {
+                console.log(err.message, err);
+                res.send({
+                    status: 0,
+                    type: 'GET_ERROR_PARAM',
+                    message: err.message,
+                })
+                return
+            }
+            try {
+                const admin = await AdminModel.findOne({ user_name })
+                if (admin) {
+                    console.log('该用户已经存在');
+                    res.send({
+                        status: 0,
+                        type: 'USER_HAS_EXIST',
+                        message: '该用户已经存在',
+                    })
+                } else {
+                    const adminTip = status == 1 ? '管理员' : '超级管理员'
+                    const admin_id = await this.getId('admin_id');
+                    const newpassword = this.encryption(password);
+                    const newAdmin = {
+                        user_name,
+                        password: newpassword,
+                        id: admin_id,
+                        create_time: dtime().format('YYYY-MM-DD'),
+                        admin: adminTip,
+                        status,
+                    }
+                    await AdminModel.create(newAdmin)
+                    req.session.admin_id = admin_id;
+                    res.send({
+                        status: 1,
+                        message: '注册管理员成功',
+                    })
+                }
+            } catch (err) {
+                console.log('注册管理员失败', err);
+                res.send({
+                    status: 0,
+                    type: 'REGISTER_ADMIN_FAILED',
+                    message: '注册管理员失败',
+                })
+            }
+        })
+    }
+    encryption(password) {
+        const newpassword = this.Md5(this.Md5(password).substr(2, 7) + this.Md5(password));
+        return newpassword
+    }
+    Md5(arg0) {
+        throw new Error('Method not implemented.');
     }
 
     async login(req, res, next) {
