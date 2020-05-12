@@ -8,5 +8,5 @@ cd node-react
 
 npm install
 
-yarn或者yarn inslall 
+yarn或者yarn install 
 ```
